@@ -8,59 +8,54 @@ const CGROUP_PID_DIR: &str = "pids";
 
 #[derive(Debug)]
 pub struct ControlGroupConfig {
-    name: String,
-    max_processes: u64,
+    pub name: String,
+    pub pids_max: u32,
+    pub cgroup_proc: u32,
+    pub memery_max: String,
 }
-
 impl ControlGroupConfig {
-    pub fn builder() -> ControlGroupConfigBuilder {
-        ControlGroupConfigBuilder::new()
-    }
-}
-
-#[derive(Debug)]
-pub struct ControlGroupConfigBuilder {
-    name: String,
-    max_processes: u64,
-}
-
-impl ControlGroupConfigBuilder {
-    pub fn new() -> Self {
+    pub fn new(name: String, pids_max: u32, cgroup_proc: u32, memery_max: String) -> Self {
         Self {
-            name: "mralians".to_owned(),
-            max_processes: 20,
+            name,
+            pids_max,
+            cgroup_proc,
+            memery_max,
         }
     }
-
-    pub fn name(mut self, name: String) -> Self {
-        self.name = name;
-        self
+    #[inline]
+    pub fn cgroup_proc(&self) -> u32 {
+        self.cgroup_proc
     }
-
-    pub fn max_processes(mut self, max_processes: u64) -> Self {
-        self.max_processes = max_processes;
-        self
+    #[inline]
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
     }
-
-    pub fn build(self) -> ControlGroupConfig {
-        ControlGroupConfig {
-            name: self.name,
-            max_processes: self.max_processes,
-        }
+    #[inline]
+    pub fn pids_max(&self) -> u32 {
+        self.pids_max
     }
 }
-
 pub fn create_control_group(config: &ControlGroupConfig) -> io::Result<()> {
-    let cgroups = Path::new(CGROUP_BASE_DIR);
+    let cgroups = Path::new("/sys/fs/cgroup");
     let pids = cgroups.join("pids");
-
     let cgroup_dir = pids.join(&config.name);
     fs::create_dir_all(&cgroup_dir)?;
 
-    let mut pid_max = File::create(cgroup_dir.join("pids.max"))?;
-    let mut cgroup_procs = File::create(cgroup_dir.join("cgroup.procs"))?;
-    pid_max.write(config.max_processes.to_string().as_bytes())?;
-    cgroup_procs.write(format!("{}", std::process::id()).as_bytes())?;
+    let mut pid_max = fs::OpenOptions::new()
+        .write(true)
+        .open(pids.join("pids.max"))?;
+
+    let mut cgroup_procs = fs::OpenOptions::new()
+        .write(true)
+        .open(cgroup_dir.join("cgroup.procs"))?;
+
+    let mut memory_max = fs::OpenOptions::new()
+        .write(true)
+        .open(pids.join("memory.max"))?;
+
+    pid_max.write(config.pids_max.to_string().as_bytes())?;
+    cgroup_procs.write(config.cgroup_proc.to_string().as_bytes())?;
+    memory_max.write(config.memery_max.as_bytes())?;
 
     Ok(())
 }
