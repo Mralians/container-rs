@@ -19,9 +19,10 @@ impl ControlGroupConfigBuilder {
     }
     pub fn build(self) -> ControlGroupConfig {
         ControlGroupConfig::new(
-            self.name.expect("please set a name for cgroup"),
-            self.pids_max.expect("please set max pid"),
-            self.cgroup_proc.expect("please set a cgroup process"),
+            self.name.expect("Please set a name for the cgroup"),
+            self.pids_max
+                .expect("Please set the maximum value for the pid"),
+            self.cgroup_proc.expect("Please set a cgroup process"),
             self.memory.unwrap_or(memory::Memory::default()),
         )
     }
