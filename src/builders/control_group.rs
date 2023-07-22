@@ -1,11 +1,11 @@
-use crate::control_group::ControlGroupConfig;
+use crate::control_group::{memory, ControlGroupConfig};
 
 #[derive(Debug, Default)]
 pub struct ControlGroupConfigBuilder {
     pub name: Option<String>,
     pub pids_max: Option<u32>,
     pub cgroup_proc: Option<u32>,
-    pub memory_max: Option<String>,
+    pub memory: Option<memory::Memory>,
 }
 impl ControlGroupConfigBuilder {
     pub fn set_name(&mut self, name: String) {
@@ -22,11 +22,7 @@ impl ControlGroupConfigBuilder {
             self.name.expect("please set a name for cgroup"),
             self.pids_max.expect("please set max pid"),
             self.cgroup_proc.expect("please set a cgroup process"),
-            self.memory_max.expect("please set memory max"),
+            self.memory.unwrap_or(memory::Memory::default()),
         )
-    }
-
-    pub fn set_memory_max(&mut self, memory_max: String) {
-        self.memory_max = Some(memory_max);
     }
 }
